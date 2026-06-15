@@ -1,18 +1,29 @@
-import java.util.Map;
+import java.util.HashMap;
 
 public class Vertice {
-    Map<Integer, Double> adjacencias;
-    String x;
-    String y;
-    long idTubo;
+    public String id;                           
+    public HashMap<String, Tubo> adjacentes;   
+    public int grau;                             
+    public String tipo;                         
 
-    public Vertice(String x, String y, long idTubo) {
-        this.x = x;
-        this.y = y;
-        this.idTubo = idTubo;
+    public Vertice(String id) {
+        this.id = id;
+        this.grau = 0;
+        this.adjacentes = new HashMap<>();
+        this.tipo = "conexao";                   // começa conexao; vira distribuicao se algum tubo disser
     }
 
-    public void adicionarAdjacencia(int destino, double distancia){
-        adjacencias.put(destino, distancia);
+    // adiciona um vizinho com o tubo (aresta)
+    public void adicionarAdjacente(String vizinho, Tubo tubo) {
+        if (!adjacentes.containsKey(vizinho)) {
+            adjacentes.put(vizinho, tubo);
+            grau++;
+        }
+    }
+
+    public void marcarTipo(String tipoDoSegmento) {
+        if (tipoDoSegmento.equals("distribuicao")) {
+            this.tipo = "distribuicao";
+        }
     }
 }
