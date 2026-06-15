@@ -2,7 +2,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Grafo {
-    private HashMap<String, Vertice> tabelaAdjacencias;
+    public HashMap<String, Vertice> tabelaAdjacencias;
     public static int qtdArestas = 0;
     public static int qtdVertices = 0;
 
@@ -41,17 +41,11 @@ public class Grafo {
         System.out.println("Vértices de conexão: " + conx);
     }
 
-
-
     public int contarArestas() {
-    int somaGraus = 0;
-    for (Map.Entry<String, Vertice> e : tabelaAdjacencias.entrySet()) {
-        somaGraus += e.getValue().grau;
-    }
-    return somaGraus / 2;   
-}
-    // para os metodos 
-    public HashMap<String, Vertice> getTabela() {
-        return tabelaAdjacencias;
+        int somaGraus = 0;
+        for (Map.Entry<String, Vertice> e : tabelaAdjacencias.entrySet()) {
+            somaGraus += e.getValue().grau;
+        }
+        return somaGraus / 2;   
     }
 }

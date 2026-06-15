@@ -16,7 +16,7 @@ public class Leitor {
                 }
 
                 String[] c = linha.split(",");
-                // colunas: x_origem,y_origem,x_destino,y_destino,comprimento,id_tubo,tipo_origem,tipo_destino,material,dn,pressao
+                // colunas: x_origem, y_origem, x_destino, y_destino, comprimento, id_tubo, tipo_origem, tipo_destino, material, dn, pressao
                 String origem  = c[0] + "," + c[1];
                 String destino = c[2] + "," + c[3];
                 double comprimento = Double.parseDouble(c[4]);

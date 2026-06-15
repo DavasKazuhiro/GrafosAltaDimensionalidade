@@ -1,13 +1,13 @@
 import java.util.HashMap;
 
 public class Vertice {
-    public String id;                           
+    public String coordenada;                           
     public HashMap<String, Tubo> adjacentes;   
     public int grau;                             
     public String tipo;                         
 
     public Vertice(String id) {
-        this.id = id;
+        this.coordenada = id;
         this.grau = 0;
         this.adjacentes = new HashMap<>();
         this.tipo = "conexao";                   // começa conexao; vira distribuicao se algum tubo disser
