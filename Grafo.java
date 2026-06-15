@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
@@ -13,6 +14,7 @@ public class Grafo {
     public HashMap<String, Vertice> tabelaAdjacencias;
     public static int qtdArestas = 0;
     public static int qtdVertices = 0;
+    private static final double INFINITO = 999999999.0;
 
     public Grafo() {
         this.tabelaAdjacencias = new HashMap<>();
@@ -183,6 +185,171 @@ public class Grafo {
             }
         }
         return false;
+    }
+
+    // DIJKSTRA otimizado com fila de prioridade, usei o comprimeito como peso 
+    private HashMap<String, Double> dijkstra(String origem) {
+        HashMap<String, Double> distancia = new HashMap<>();
+
+        // COMECA TUDO COMO INFINITO
+        for (String v : tabelaAdjacencias.keySet()) {
+            distancia.put(v, INFINITO);
+        }
+        distancia.put(origem, 0.0);
+
+        // FILA DE PRIORIDADE: SEMPRE PEGA O VERTICE DE MENOR DISTANCIA
+        PriorityQueue<FilaPrioridade> fila = new PriorityQueue<>((a, b) -> Double.compare(a.dist, b.dist));
+        fila.add(new FilaPrioridade(origem, 0.0));
+
+        while (!fila.isEmpty()) {
+            FilaPrioridade atual = fila.poll();
+            String u = atual.id;
+
+            // SE JA ACHEI UM CAMINHO MELHOR ANTES, IGNORA
+            if (atual.dist > distancia.get(u)) continue;
+
+            // OLHA OS VIZINHOS
+            for (Map.Entry<String, Tubo> adj : tabelaAdjacencias.get(u).adjacentes.entrySet()) {
+                String v = adj.getKey();
+                double peso = adj.getValue().comprimento;
+                double novaDist = distancia.get(u) + peso;
+
+                // SE O CAMINHO PASSANDO POR U FOR MENOR, ATUALIZA
+                if (novaDist < distancia.get(v)) {
+                    distancia.put(v, novaDist);
+                    fila.add(new FilaPrioridade(v, novaDist));
+                }
+            }
+        }
+
+        return distancia;
+    }
+
+    // CENTRALIDADE DE PROXIMIDADE DE UM VERTICE
+    // CONSIDERA SO OS VERTICES QUE ELE CONSEGUE ALCANCAR, OU SEJA, DO MESMO COMPONENTE
+    public Double proximidade(String no) {
+
+        if (!tabelaAdjacencias.containsKey(no)) return null;
+
+        HashMap<String, Double> distancia = dijkstra(no);
+
+        double soma = 0.0;
+        int alcancaveis = 0;
+        for (Map.Entry<String, Double> e : distancia.entrySet()) {
+            if (e.getKey().equals(no)) continue;       // PULA ELE MESMO
+            if (e.getValue() >= INFINITO) continue;    // PULA OS QUE NAO ALCANCA, aqui da retorna null 
+            soma += e.getValue();
+            alcancaveis++;
+        }
+
+        // SE NAO ALCANCA NINGUEM (VERTICE ISOLADO) RETORNA NULL
+        if (alcancaveis == 0) return null;
+
+        return alcancaveis / soma;
+    }
+
+    // MOSTRA O TOP N DE PROXIMIDADE DE CADA COMPONENTE
+    public void topProximidadePorComponente(int n) {
+        List<Set<String>> componentes = encontrarComponentes();
+
+        // ORDENA OS COMPONENTES DO MAIOR PRO MENOR (ASSIM MOSTRA OS MAIS IMPORTANTES PRIMEIRO)
+        componentes.sort((a, b) -> Integer.compare(b.size(), a.size())); 
+
+        int numComp = 1;
+        for (Set<String> componente : componentes) {
+            // IGNORA COMPONENTES PEQUENOS, se não da quase 200 componentes disconexos
+            if (componente.size() < 100) continue;
+
+            // CALCULA A PROXIMIDADE DE CADA VERTICE DO COMPONENTE
+            HashMap<String, Double> valores = new HashMap<>();
+            for (String no : componente) {
+                valores.put(no, proximidade(no));
+            }
+
+            // COLOCA NUMA LISTA E ORDENA POR PROXIMIDADE (MAIOR PRIMEIRO)
+            List<String> ordenados = new ArrayList<>(componente);
+            ordenados.sort((a, b) -> {
+                Double va = valores.get(a);
+                Double vb = valores.get(b);
+                if (va == null) return 1;
+                if (vb == null) return -1;
+                return Double.compare(vb, va);
+            });
+
+            System.out.println("\nComponente " + numComp + " (" + componente.size() + " vertices)");
+            for (int i = 0; i < n && i < ordenados.size(); i++) {
+                String no = ordenados.get(i);
+                System.out.println("  " + no + " -> " + valores.get(no));
+            }
+            numComp++;
+        }
+    }
+
+    // CENTRALIDADE DE INTERMEDIACAO DE TODOS OS VERTICES
+    public HashMap<String, Double> intermediacaoTodos() {
+        // COMECA TODO MUNDO COM 0
+        HashMap<String, Double> intermediacao = new HashMap<>();
+        for (String v : tabelaAdjacencias.keySet()) {
+            intermediacao.put(v, 0.0);
+        }
+
+        int total = tabelaAdjacencias.size();
+        int contador = 0;
+
+        // PARA CADA VERTICE DE ORIGEM
+        for (String origem : tabelaAdjacencias.keySet()) {
+
+            // DIJKSTRA GUARDANDO QUEM VEM ANTES DE CADA VERTICE
+            HashMap<String, Double> distancia = new HashMap<>();
+            HashMap<String, String> anterior = new HashMap<>();
+            for (String v : tabelaAdjacencias.keySet()) {
+                distancia.put(v, INFINITO);
+                anterior.put(v, null);
+            }
+            distancia.put(origem, 0.0);
+
+            PriorityQueue<FilaPrioridade> fila = new PriorityQueue<>((a, b) -> Double.compare(a.dist, b.dist));
+            fila.add(new FilaPrioridade(origem, 0.0));
+
+            while (!fila.isEmpty()) {
+                FilaPrioridade atual = fila.poll();
+                String u = atual.id;
+                if (atual.dist > distancia.get(u)) continue;
+
+                for (Map.Entry<String, Tubo> adj : tabelaAdjacencias.get(u).adjacentes.entrySet()) {
+                    String v = adj.getKey();
+                    double peso = adj.getValue().comprimento;
+                    double novaDist = distancia.get(u) + peso;
+                    if (novaDist < distancia.get(v)) {
+                        distancia.put(v, novaDist);
+                        anterior.put(v, u);
+                        fila.add(new FilaPrioridade(v, novaDist));
+                    }
+                }
+            }
+
+            // PARA CADA DESTINO, VOLTA PELO CAMINHO E MARCA OS VERTICES DO MEIO
+            for (String destino : tabelaAdjacencias.keySet()) {
+                // SO PROCESSA SE O DESTINO VEM DEPOIS DA ORIGEM (EVITA CONTAR O PAR 2X)
+                if (destino.compareTo(origem) <= 0) continue;
+                if (distancia.get(destino) >= INFINITO) continue;   // NAO ALCANCA
+
+                // ANDA DO DESTINO PRA TRAS ATE CHEGAR NA ORIGEM
+                String passo = anterior.get(destino);
+                while (passo != null && !passo.equals(origem)) {
+                    intermediacao.put(passo, intermediacao.get(passo) + 1);
+                    passo = anterior.get(passo);
+                }
+            }
+
+            // contador pra ver se esta rodando, fico aguniado 
+            contador++;
+            if (contador % 500 == 0) {
+                System.out.println("Intermediacao: " + contador + " / " + total);
+            }
+        }
+        // como é um grafo não direcionado posso só fazer metade dos pares os os outros vai ser igual 
+        return intermediacao;
     }
 
     public static Grafo gerarGrafoAleatorio(int numVertices, int numArestas, boolean conexo) {
