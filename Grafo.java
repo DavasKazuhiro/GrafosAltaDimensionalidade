@@ -180,7 +180,7 @@ public class Grafo {
                     return true;
                 }
             } else if (!vizinho.equals(pai)) {
-                // Vizinho já visitado e não é o pai → ciclo encontrado
+                // Vizinho já visitado e não é o pai - ciclo encontrado
                 return true;
             }
         }
